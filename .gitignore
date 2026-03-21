@@ -1,0 +1,19 @@
+# Credentials — never commit these
+zotero_config.json
+*_config.json
+*.key
+.env
+
+# Personal files
+conversation_log.md
+memory/
+MEMORY.md
+
+# Actual (non-template) CLAUDE.md files with personal content
+# (templates in /templates/ are fine)
+CLAUDE.md
+
+# OS
+.DS_Store
+__pycache__/
+*.pyc

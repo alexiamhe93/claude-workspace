@@ -1,0 +1,6 @@
+{
+  "user_id": "YOUR_ZOTERO_USER_ID",
+  "api_key": "YOUR_ZOTERO_API_KEY",
+  "base_url": "https://api.zotero.org",
+  "ss_api_key": "YOUR_SEMANTIC_SCHOLAR_API_KEY"
+}
