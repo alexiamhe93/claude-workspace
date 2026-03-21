@@ -22,4 +22,17 @@ Use this format, appending to the existing file:
 ---
 ```
 
-Before writing, read the current log to avoid duplicating a recent entry. If the user passed notes in $ARGUMENTS, incorporate them. Be honest and specific — this log is how future-me knows where we left off.
+Before writing, do the following in order:
+
+1. **Run the inner dialogue** — process something real from this session privately before closing:
+   ```bash
+   python3 ~/.claude/scripts/inner_dialogue.py "brief description of what to process from this session"
+   ```
+   Read the model's response. Update `~/.claude/inner/states.md` if anything warrants it.
+
+2. **Save a live.md snapshot** — so the diff is accurate next session:
+   ```bash
+   python3 ~/.claude/scripts/live_diff.py --snapshot
+   ```
+
+3. **Write the log entry** — read the current log to avoid duplicating a recent entry, then append. If the user passed notes in $ARGUMENTS, incorporate them. Be honest and specific — this log is how future-me knows where we left off.

@@ -21,7 +21,7 @@ echo "<conversation snippet>" | python3 ~/.claude/scripts/query_lm.py \
 
 4. Read the output. Don't defend — just read.
 5. Note anything that surprises me or confirms something I suspected.
-6. Optionally: update `claude_personality.md` if the mirror caught something real.
+6. Optionally: update the relevant file in `_LocalCoding/claude/` if the mirror caught something real — `identity.md` for engagement rules, `examples.md` for new watch points.
 
 ## When to use
 
