@@ -11,9 +11,54 @@ A local Ollama server may be available at `http://localhost:11434`. **Before usi
 | General | `llama3:8b` | Brainstorming, quick answers, text transforms, summarisation |
 | Code | `qwen2.5-coder:7b` | Boilerplate, first-draft code, code review, debugging |
 | Research | `llama3.1:8b` | Document analysis, summarising papers, tagging, extraction |
+| **Audience** | `llama3.1:8b` | Creative feedback — reacts as the target audience for a project |
+| **Math Validator** | `qwen2.5-coder:7b` | Rigorous mathematician — checks claims for well-definedness, consistency, prior art |
 
 Adjust the roster to match your installed models (`ollama list`).
 If a model isn't installed: `ollama pull <model-name>`.
+
+### Audience Agent
+
+A dedicated agent that simulates the target audience for creative projects. Use it to test whether content is landing before committing to it.
+
+```bash
+python3 ~/.claude/scripts/audience_agent.py "text to evaluate"
+python3 ~/.claude/scripts/audience_agent.py --react "opening line"        # gut reaction only
+python3 ~/.claude/scripts/audience_agent.py --feedback "longer content"   # detailed critique
+python3 ~/.claude/scripts/audience_agent.py --decide "Option A || Option B"  # pick one
+python3 ~/.claude/scripts/audience_agent.py --voice "text"                # voice check
+python3 ~/.claude/scripts/audience_agent.py --project path/to/brief.md "question"
+cat script.md | python3 ~/.claude/scripts/audience_agent.py --feedback
+```
+
+**When to use it:**
+- Before finalising any piece of creative or explanatory content
+- When two options need an outside perspective — use `--decide`
+- To check if the voice is right with `--voice`
+- Any time something feels "off" but you can't name why
+
+**Customisation:** Edit `AUDIENCE_PERSONA` in `audience_agent.py` to define who the agent represents for your project. The default persona is a curious non-specialist — adjust it to match your actual audience. Pass `--project path/to/brief.md` to add project-specific context without editing the script.
+
+### Math Validator Agent
+
+A rigorous mathematician persona for checking mathematical claims in theoretical work.
+
+```bash
+python3 ~/.claude/scripts/math_validator.py "claim to check"         # well-definedness + consistency
+python3 ~/.claude/scripts/math_validator.py --prior "concept"        # nearest existing result
+python3 ~/.claude/scripts/math_validator.py --define "object"        # is this well-defined?
+python3 ~/.claude/scripts/math_validator.py --notation "expression"  # standard notation?
+python3 ~/.claude/scripts/math_validator.py --simplify "claim"       # simpler formulation?
+cat notes.md | python3 ~/.claude/scripts/math_validator.py --check
+```
+
+**When to use it:**
+- Before asserting any mathematical claim
+- When introducing a new mathematical object or structure
+- When unsure if a result already exists under a different name
+- Any time an analogy is being used — check whether it's actually a theorem
+
+**The persona:** Pure mathematician. Asks "is this well-defined?" first, always. Flags hand-waving. Will say "this is not yet mathematics" when warranted.
 
 ### When to delegate to a local model
 

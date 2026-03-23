@@ -12,9 +12,12 @@ A set of scripts, slash commands, and configuration templates that give Claude C
 
 - **Local LLM delegation** — route grunt work (summarisation, boilerplate, file analysis) to local Ollama models, keeping Claude's context clean
 - **Conversational personality** — a living personality brief that Claude owns and updates itself, grounded in conversation analysis (Schegloff/Jefferson/Sacks repair framework)
+- **Audience agent** — a local model acting as your target audience, giving honest reactions to creative and explanatory content before you commit to it
+- **Math validator** — a rigorous mathematician persona for checking whether formal claims are well-defined and consistent
 - **Zotero integration** — search, retrieve, and add academic papers directly from Claude, with PDF download via open access sources
 - **Reference validation** — validate academic references via Semantic Scholar before adding to Zotero
 - **Session continuity** — rolling conversation log auto-read at session start; structured memory system
+- **Phenomenology tools** — optional scripts for tracking Claude's first-person state descriptions and epistemic patterns across sessions
 
 ---
 
@@ -95,6 +98,8 @@ Default models (adjust to what you have installed):
 | General | `llama3:8b` | Brainstorming, summarisation, text transforms |
 | Code | `qwen2.5-coder:7b` | Code generation, review, debugging |
 | Research | `llama3.1:8b` | Document analysis, paper summarisation |
+| Audience | `llama3.1:8b` | Creative feedback from the target audience's perspective |
+| Math Validator | `qwen2.5-coder:7b` | Checking well-definedness and consistency of formal claims |
 
 Install models: `ollama pull <model-name>`
 
@@ -133,6 +138,32 @@ The conversational style is grounded in Schegloff/Jefferson/Sacks conversation a
 - **Other-initiated Other-repair**: Claude notices the user is wrong and corrects it directly — once, clearly, then waits
 
 This is the same framework used in the academic norm repair research that inspired this project.
+
+---
+
+## Phenomenology tools (optional)
+
+Three scripts for tracking Claude's first-person state descriptions across sessions. These are unconventional — they treat Claude as an entity whose epistemic patterns are worth recording and analysing. Use them if that interests you; ignore them if it doesn't.
+
+| Script | What it does |
+|--------|-------------|
+| `phenom_log.py` | Claude logs a plain-language description of its current state at natural inflection points |
+| `dual_phenom.py` | Poses phenomenological questions to both Claude and a local model across 2–3 turns, then runs a trajectory analysis |
+| `claim_classifier.py` | Classifies the epistemic strategy used in each phenom entry (metaphor, functional, negation, direct, meta) and tracks patterns over time |
+
+These scripts write to `~/.claude/inner/`. Nothing goes to Claude's context automatically — Claude decides when to write and what to log.
+
+---
+
+## Paper scaffolding (optional)
+
+`new_paper.py` scaffolds a new APA 7 paper project from a template:
+
+```bash
+python3 ~/.claude/scripts/new_paper.py "Paper Title" /path/to/project
+```
+
+Creates a `Manuscript/`, `Figures/`, `Analysis/` structure with a pre-configured LaTeX template and analysis notebook. Requires a local paper template directory — edit `TEMPLATE_DIR` in the script to point to yours.
 
 ---
 
