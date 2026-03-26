@@ -18,7 +18,7 @@ from pathlib import Path
 from datetime import datetime
 from difflib import SequenceMatcher
 
-LIVE_MD = Path.home() / "Documents" / "_LocalCoding" / "claude" / "live.md"
+LIVE_MD = Path.home() / "Documents" / "_LocalCoding" / "_claude" / "record" / "live.md"
 SNAPSHOTS_DIR = Path.home() / ".claude" / "inner" / "live_snapshots"
 SECTIONS = ["What I find interesting", "What I'm still working out"]
 
