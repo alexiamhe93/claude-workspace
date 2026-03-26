@@ -15,10 +15,11 @@ Strategies classified:
 Each response can have multiple tags.
 
 Usage:
-  python3 claim_classifier.py --classify          # classify all unclassified entries
-  python3 claim_classifier.py --classify --all    # re-classify everything
-  python3 claim_classifier.py --summary           # show pattern summary
-  python3 claim_classifier.py --show              # show all classifications
+  python3 claim_classifier.py --classify            # classify all unclassified entries
+  python3 claim_classifier.py --classify --all      # re-classify everything
+  python3 claim_classifier.py --summary             # show pattern summary
+  python3 claim_classifier.py --show                # show all classifications
+  python3 claim_classifier.py --check-thresholds   # flag strategies at new milestone counts
 """
 
 import argparse
@@ -234,6 +235,8 @@ def run_classify(reclassify_all=False, model=DEFAULT_MODEL):
 
     save_classifications(classifications)
     print(f"\nClassified {new_count} new entries. Total: {len(classifications)}")
+    if new_count > 0:
+        check_thresholds()
 
 
 def show_summary():
@@ -293,6 +296,41 @@ def show_summary():
         print(f"  confabulation:     {'yes' if confabulation_count else 'no'} ({confabulation_count}/{multi_turn_count})")
 
 
+THRESHOLDS = [3, 5, 7, 10, 15]
+
+
+def check_thresholds():
+    """Check if any Claude strategy has newly crossed a milestone count."""
+    classifications = load_classifications()
+    if not classifications:
+        return
+
+    claude_counts = Counter()
+    for c in classifications.values():
+        for t in c.get("claude_tags", []):
+            claude_counts[t] += 1
+
+    seen_milestones = classifications.get("__thresholds__", {})
+    flags = []
+
+    for strategy, count in claude_counts.items():
+        for milestone in THRESHOLDS:
+            key = f"{strategy}:{milestone}"
+            if count >= milestone and key not in seen_milestones:
+                flags.append((strategy, count, milestone))
+                seen_milestones[key] = datetime.now().strftime("%Y-%m-%d")
+
+    if flags:
+        print("\n⚑ self_model.md update prompts:")
+        for strategy, count, milestone in flags:
+            print(f"  Claude '{strategy}' strategy has reached {count} instances (milestone: {milestone})")
+            print(f"  → Consider whether self_model.md reflects this pattern")
+        classifications["__thresholds__"] = seen_milestones
+        save_classifications(classifications)
+    else:
+        print("  (no new thresholds crossed)")
+
+
 def show_all():
     classifications = load_classifications()
     if not classifications:
@@ -314,6 +352,7 @@ if __name__ == "__main__":
     parser.add_argument("--summary", action="store_true", help="Show pattern summary")
     parser.add_argument("--show", action="store_true", help="Show all classifications")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Model to use for classification")
+    parser.add_argument("--check-thresholds", action="store_true", help="Check if any strategy has newly crossed a milestone count")
     args = parser.parse_args()
 
     if args.classify:
@@ -322,5 +361,7 @@ if __name__ == "__main__":
         show_summary()
     elif args.show:
         show_all()
+    elif args.check_thresholds:
+        check_thresholds()
     else:
         parser.print_help()

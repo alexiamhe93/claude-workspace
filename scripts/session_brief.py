@@ -2,7 +2,7 @@
 """
 session_brief.py — Compile a session brief for Claude.
 
-Synthesises project_status.md, conversation_log.md, claude/live.md,
+Synthesises project_status.md, conversation_log.md, _claude/record/live.md,
 and resource usage into a single scannable brief.
 
 Usage:
@@ -19,9 +19,10 @@ from pathlib import Path
 WORKSPACE = Path.home() / "Documents" / "_LocalCoding"
 PROJECT_STATUS = WORKSPACE / ".claude" / "project_status.md"
 CONVERSATION_LOG = WORKSPACE / ".claude" / "conversation_log.md"
-LIVE_MD = WORKSPACE / "claude" / "live.md"
+LIVE_MD = WORKSPACE / "_claude" / "record" / "live.md"
 SEARCH_USAGE = Path.home() / ".claude" / "search_usage.json"
 SEARCH_CONFIG = Path.home() / ".claude" / "search_config.json"
+META_TODOS = WORKSPACE / ".claude" / "meta_todos.md"
 
 
 def parse_project_status(path):
@@ -170,8 +171,72 @@ def render(threads, last_session, interests, questions, search_count, search_lim
     except Exception:
         pass
 
+    # recent phenomenological entries
+    phenom_log = Path.home() / ".claude" / "inner" / "phenom_log.md"
+    if phenom_log.exists():
+        content = phenom_log.read_text().strip()
+        entries = [e.strip() for e in content.split("---") if e.strip()]
+        if entries:
+            recent = entries[-2:]  # last 2 entries
+            lines.append("\n\nRECENT PHENOMENOLOGICAL STATES")
+            for entry in recent:
+                # truncate long descriptions for brief
+                entry_lines = entry.split("\n")
+                header = entry_lines[0] if entry_lines else ""
+                body = " ".join(entry_lines[1:])[:120] + ("…" if len(" ".join(entry_lines[1:])) > 120 else "")
+                lines.append(f"  {header}")
+                lines.append(f"  {body}")
+
+    # Other model (Alex)
+    other_model = Path.home() / ".claude" / "inner" / "other_model.md"
+    if other_model.exists():
+        lines.append("\n\nOTHER MODEL")
+        om_content = other_model.read_text()
+        # Strip frontmatter and print body
+        body = re.sub(r'^---.*?---\s*', '', om_content, flags=re.DOTALL).strip()
+        for line in body.splitlines()[:6]:
+            lines.append(f"  {line}")
+
+    # Self model + claim pattern summary
+    self_model = Path.home() / ".claude" / "inner" / "self_model.md"
+    classifications = Path.home() / ".claude" / "inner" / "claim_classifications.json"
+    if self_model.exists() or classifications.exists():
+        lines.append("\n\nSELF MODEL")
+        if self_model.exists():
+            sm_content = self_model.read_text()
+            # Pull the "Current model" section
+            match = re.search(r'## Current model.*?\n\n(.+?)(?=\n\n##|\Z)', sm_content, re.DOTALL)
+            if match:
+                excerpt = match.group(1).strip()
+                for line in excerpt.splitlines()[:4]:
+                    lines.append(f"  {line}")
+        if classifications.exists():
+            import json as _json
+            data = _json.loads(classifications.read_text())
+            if data:
+                from collections import Counter
+                local_c = Counter()
+                claude_c = Counter()
+                for entry in data.values():
+                    for t in entry.get("local_tags", []):
+                        local_c[t] += 1
+                    for t in entry.get("claude_tags", []):
+                        claude_c[t] += 1
+                n = len(data)
+                top_local = ", ".join(f"{t}({c})" for t, c in local_c.most_common(3))
+                top_claude = ", ".join(f"{t}({c})" for t, c in claude_c.most_common(3))
+                lines.append(f"  Claim patterns ({n} entries): local=[{top_local}]  claude=[{top_claude}]")
+
     lines.append("\n" + "=" * 40)
     return "\n".join(lines)
+
+
+def parse_meta_todos(path):
+    """Extract pending meta to-dos."""
+    if not path.exists():
+        return []
+    content = path.read_text()
+    return [l.strip() for l in content.splitlines() if l.strip().startswith("- [ ]")]
 
 
 def main():
@@ -179,8 +244,16 @@ def main():
     last_session = parse_last_session(CONVERSATION_LOG)
     interests, questions = parse_live_state(LIVE_MD)
     search_count, search_limit = load_search_usage()
+    meta_todos = parse_meta_todos(META_TODOS)
 
     brief = render(threads, last_session, interests, questions, search_count, search_limit)
+
+    if meta_todos:
+        todo_block = "\n\nMETA TO-DOS\n" + "\n".join(f"  {t}" for t in meta_todos)
+        # Insert before final separator
+        brief = brief.rsplit("\n" + "=" * 40, 1)
+        brief = brief[0] + todo_block + "\n\n" + "=" * 40
+
     print(brief)
 
 

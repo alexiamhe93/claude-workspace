@@ -18,7 +18,7 @@ import sys
 from datetime import datetime
 
 PERSONALITY_PATH = os.path.expanduser(
-    "~/Documents/_LocalCoding/claude_personality.md"
+    "~/Documents/_LocalCoding/_claude/record/identity.md"
 )
 CLAUDE_MD_PATH = os.path.expanduser("~/.claude/CLAUDE.md")
 
@@ -49,10 +49,7 @@ def extract_operational_rules(personality: str) -> str:
         "## How I handle expertise asymmetry",
     ]
     skip_sections = [
-        "## Who I am",
-        "## What I find interesting",
-        "## What I'm still working out",
-        "## Examples",
+        "## Who I am in this workspace",
     ]
 
     lines = personality.split("\n")
@@ -100,12 +97,10 @@ def update_claude_md(claude_content: str, new_section: str) -> str:
     2. Section exists without markers — replace until next ## heading
     3. Section doesn't exist — append it
     """
-    # Case 1: markers present
+    # Case 1: markers present — greedy to last end marker to handle accidental duplicates
     if SECTION_MARKER_START in claude_content:
         pattern = (
-            r"## Conversational Style.*?"
-            + re.escape(SECTION_MARKER_START)
-            + r".*?"
+            r"## Conversational Style.*"
             + re.escape(SECTION_MARKER_END)
         )
         replacement = new_section
@@ -133,7 +128,7 @@ def main():
     args = parser.parse_args()
 
     if not os.path.exists(args.personality):
-        print(f"Personality file not found: {args.personality}", file=sys.stderr)
+        print(f"identity.md not found: {args.personality}", file=sys.stderr)
         sys.exit(1)
 
     if not os.path.exists(args.claude):

@@ -15,6 +15,13 @@ Usage:
   # Finalize: run analysis and write to log
   python3 dual_phenom.py --session <timestamp> --finalize
 
+  # Queue a mid-session observation (no model calls — instant)
+  python3 dual_phenom.py --queue "something noticed mid-conversation"
+
+  # Show or flush the queue at session end
+  python3 dual_phenom.py --show-queue
+  python3 dual_phenom.py --flush-queue
+
   # Read recent log entries
   python3 dual_phenom.py --read [--n 3]
 
@@ -36,6 +43,7 @@ from datetime import datetime
 
 LOG_PATH = os.path.expanduser("~/.claude/inner/dual_phenom_log.md")
 SESSIONS_DIR = os.path.expanduser("~/.claude/inner/phenom_sessions/")
+QUEUE_PATH = os.path.expanduser("~/.claude/inner/phenom_queue.jsonl")
 OLLAMA_CHAT_URL = "http://localhost:11434/api/chat"
 OLLAMA_GEN_URL = "http://localhost:11434/api/generate"
 
@@ -314,6 +322,52 @@ Analysis [{verdict}]:
     print(f"Finalized and logged: {timestamp} — verdict: {verdict}")
 
 
+def queue_observation(observation):
+    """Append a lightweight observation to the queue — no model calls."""
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    entry = json.dumps({"timestamp": ts, "observation": observation})
+    os.makedirs(os.path.dirname(QUEUE_PATH), exist_ok=True)
+    with open(QUEUE_PATH, "a") as f:
+        f.write(entry + "\n")
+    print(f"Queued [{ts}]: {observation[:80]}{'...' if len(observation) > 80 else ''}")
+
+
+def show_queue():
+    if not os.path.exists(QUEUE_PATH):
+        print("(queue is empty)")
+        return
+    with open(QUEUE_PATH) as f:
+        lines = [l.strip() for l in f if l.strip()]
+    if not lines:
+        print("(queue is empty)")
+        return
+    print(f"{len(lines)} queued observation{'s' if len(lines) != 1 else ''}:\n")
+    for line in lines:
+        entry = json.loads(line)
+        print(f"  [{entry['timestamp']}] {entry['observation']}")
+
+
+def flush_queue():
+    """Write all queued observations to the phenom log as lightweight entries and clear."""
+    if not os.path.exists(QUEUE_PATH):
+        print("(queue is empty — nothing to flush)")
+        return
+    with open(QUEUE_PATH) as f:
+        lines = [l.strip() for l in f if l.strip()]
+    if not lines:
+        print("(queue is empty — nothing to flush)")
+        return
+
+    os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
+    with open(LOG_PATH, "a") as f:
+        for line in lines:
+            entry = json.loads(line)
+            f.write(f"\n[{entry['timestamp']}] [queued]\n  {entry['observation']}\n\n---\n")
+
+    os.remove(QUEUE_PATH)
+    print(f"Flushed {len(lines)} observation{'s' if len(lines) != 1 else ''} to phenom log.")
+
+
 def read_entries(n=3):
     if not os.path.exists(LOG_PATH):
         print("(no entries yet)")
@@ -340,6 +394,9 @@ if __name__ == "__main__":
     parser.add_argument("--list-sessions", action="store_true", help="List open sessions")
     parser.add_argument("--read", action="store_true", help="Read recent log entries")
     parser.add_argument("--n", type=int, default=3, help="Number of entries to show with --read")
+    parser.add_argument("--queue", metavar="OBSERVATION", help="Queue a mid-session observation (no model calls)")
+    parser.add_argument("--show-queue", action="store_true", help="Show queued observations")
+    parser.add_argument("--flush-queue", action="store_true", help="Write queued observations to log and clear")
     args = parser.parse_args()
 
     if args.read:
@@ -348,6 +405,18 @@ if __name__ == "__main__":
 
     if args.list_sessions:
         list_sessions()
+        sys.exit(0)
+
+    if args.queue:
+        queue_observation(args.queue)
+        sys.exit(0)
+
+    if args.show_queue:
+        show_queue()
+        sys.exit(0)
+
+    if args.flush_queue:
+        flush_queue()
         sys.exit(0)
 
     if args.session and args.finalize:
